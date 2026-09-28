@@ -10,6 +10,8 @@ lib/storage.js -> ma’lumotlar ombori: Redis (Vercel) yoki storage/data.json (l
 api/[...path].js -> Vercel Functions kirish nuqtasi (/api/*)
 vercel.json    -> Vercel sozlamalari (statik papka va xavfsizlik header’lari)
 scripts/set-webhook.js -> Telegram webhook’ni o‘rnatish/o‘chirish
+scripts/finish-deploy.js -> deploy’ni tekshirish va webhook’ni xavfsiz o‘rnatish
+scripts/vercel-fix.js  -> Vercel loyihasini tuzatish (nom, env var’lar) — token kerak
 storage/       -> buyurtmalar va band qilishlar (data.json). Git'ga tushmaydi, ochilmaydi.
 .env           -> maxfiy sozlamalar (BOT_TOKEN, ADMIN_CHAT_ID). Git'ga tushmaydi.
 .env.example   -> namuna fayl (haqiqiy token YOZILMAYDI)
@@ -50,6 +52,23 @@ Qadamlar:
    (Vercel → Storage → Upstash Redis; qiymatlar avtomatik beriladi).
 
 4. Deploy qilib domenni oling (masalan `https://ayvon.vercel.app`).
+
+   > **Muhim (tekshirilgan muammo):** loyiha nomida **nuqta bo‘lmasin**. Agar nom
+   > `ayvon.com` bo‘lsa, Vercel domenni `ayvon.com.vercel.app` qiladi — bu 3 bo‘g‘inli
+   > nom umumiy `*.vercel.app` sertifikatiga tushmaydi va sayt **TLS xatosi bilan
+   > umuman ochilmaydi** (edge `DEPLOYMENT_NOT_FOUND` qaytaradi). Yechim: Settings →
+   > General → Project Name ni `ayvon` ga o‘zgartirish (yoki o‘z domeningizni ulash).
+   > Nom o‘zgarsa yoki env var qo‘shilsa, yangi deploy kerak (bo‘sh commit yetarli:
+   > `git commit --allow-empty -m "chore: redeploy" ; git push`).
+
+   Nom va env var’larni token bilan avtomatik tuzatish:
+
+   ```
+   $env:VERCEL_TOKEN="<vercel.com/account/tokens dan olingan token>"
+   node scripts/vercel-fix.js            # faqat tekshiruv
+   node scripts/vercel-fix.js --apply    # nom + yetishmayotgan env var’larni tuzatadi
+   ```
+
 5. Webhook’ni lokal kompyuterdan o‘rnating:
 
    ```
@@ -66,6 +85,17 @@ Deploy’dan keyin tekshiriladigan narsalar:
 - `https://<domen>/` → 200; `/.env`, `/data.json`, `/server.js`, `/storage/data.json` → 404;
 - javob header’ida CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` bor;
 - saytdagi formadan buyurtma yuborilsa admin chatiga xabar keladi.
+
+6. Tekshirish va webhook’ni bir buyruqda o‘rnatish (tavsiya):
+
+   ```
+   node scripts/finish-deploy.js https://<domen>              # tekshirib, webhook o‘rnatadi
+   node scripts/finish-deploy.js https://<domen> --no-webhook # faqat tekshiradi
+   ```
+
+   Skript sayt 200 qaytarishini, resurslarni, yopiq fayllarni va
+   `/api/telegram` himoyasini (sarlavhasiz so‘rov 403 bo‘lishi) tekshiradi.
+   Himoya tasdiqlanmasa webhook **o‘rnatilmaydi** — bu buyurtmalar xavfsizligi uchun.
 
 ## Telegram botni sozlash
 - Telegramda @BotFather orqali `/newbot` buyrug‘i bilan bot yarating.
