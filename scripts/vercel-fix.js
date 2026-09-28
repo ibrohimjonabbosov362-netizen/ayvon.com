@@ -79,8 +79,12 @@ async function api(path, { method = "GET", body, teamId = TEAM } = {}) {
 }
 
 (async () => {
-  const me = await api("/v2/user");
-  console.log(`Hisob: ${me.user.username || me.user.email || me.user.id}`);
+  try {
+    const me = await api("/v2/user");
+    console.log(`Hisob: ${me.user.username || me.user.email || me.user.id}`);
+  } catch (error) {
+    console.log(`Hisobni aniqlab bo'lmadi (${error.message}) - davom etamiz.`);
+  }
   console.log(`Rejim: ${APPLY ? "TUZATISH (--apply)" : "faqat tekshiruv"}\n`);
 
   let projects = [];
