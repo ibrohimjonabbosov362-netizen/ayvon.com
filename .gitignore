@@ -1,0 +1,20 @@
+# Maxfiy ma'lumotlar — hech qachon commit qilinmasin
+.env
+.env.*
+!.env.example
+
+# Mijozlar ma'lumotlari (PII)
+data.json
+storage/
+*.tmp
+
+# Kutubxonalar va loglar
+node_modules/
+npm-debug.log*
+*.log
+
+# Tahrirlovchi / OS fayllari
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
