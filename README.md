@@ -69,6 +69,14 @@ Qadamlar:
    node scripts/vercel-fix.js --apply    # nom + yetishmayotgan env var’larni tuzatadi
    ```
 
+   > **Joriy holat:** Vercel’dagi loyiha nomi `ayvon-com`, avtomatik manzili
+   > **https://ayvon-com.vercel.app**. Nuqtali `ayvon.com.vercel.app` umuman mavjud emas —
+   > uni ishlatmang. Agar `/api/*` so‘rovlari HTTP 500 bilan
+   > `{"error":"Server sozlamalari to‘liq emas."}` qaytarsa, demak `BOT_TOKEN` yoki
+   > `ADMIN_CHAT_ID` production muhitida ko‘rinmayapti (qiymati bo‘sh bo‘lsa ham shunday
+   > bo‘ladi): Settings → Environment Variables ichida ikkalasi ham **Production**
+   > target’ida va qiymati to‘ldirilgan bo‘lishi kerak, so‘ng yangi deployment kerak.
+
 5. Webhook’ni lokal kompyuterdan o‘rnating:
 
    ```
