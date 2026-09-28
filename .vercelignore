@@ -1,0 +1,12 @@
+# Vercel'ga yuklanmaydigan fayllar (.gitignore kabi ishlaydi).
+# Eng muhimi: .env va storage/ bulutga umuman tushmasin.
+
+.env
+.env.local
+.env.*.local
+storage/
+.git/
+node_modules/
+*.log
+*.tmp
+.vercel/

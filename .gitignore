@@ -18,3 +18,7 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel CLI (mahalliy sozlamalar, maxfiy fayllar bo‘lishi mumkin)
+.vercel/
+

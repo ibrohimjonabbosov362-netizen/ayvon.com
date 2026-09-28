@@ -3,7 +3,13 @@
 ## Papka tuzilishi
 ```
 public/        -> faqat shu papka HTTP orqali ochiladi (index.html, style.css, app.js)
-server.js      -> Express server + Telegram bot
+server.js      -> lokal/VPS uchun server (Express + Telegram polling)
+lib/app.js     -> Express ilovasi (marshrutlar, xavfsizlik) — serverless uchun ham umumiy
+lib/bot.js     -> Telegram bot va buyruqlar (/start, /id, /cancel)
+lib/storage.js -> ma’lumotlar ombori: Redis (Vercel) yoki storage/data.json (lokal)
+api/[...path].js -> Vercel Functions kirish nuqtasi (/api/*)
+vercel.json    -> Vercel sozlamalari (statik papka va xavfsizlik header’lari)
+scripts/set-webhook.js -> Telegram webhook’ni o‘rnatish/o‘chirish
 storage/       -> buyurtmalar va band qilishlar (data.json). Git'ga tushmaydi, ochilmaydi.
 .env           -> maxfiy sozlamalar (BOT_TOKEN, ADMIN_CHAT_ID). Git'ga tushmaydi.
 .env.example   -> namuna fayl (haqiqiy token YOZILMAYDI)
@@ -18,6 +24,48 @@ storage/       -> buyurtmalar va band qilishlar (data.json). Git'ga tushmaydi, o
 
 > `.env` faylini hech qachon GitHub'ga yubormang. `.gitignore` uni allaqachon himoyalaydi.
 > Agar token bir marta oshkor bo‘lgan bo‘lsa, @BotFather orqali **albatta yangilang** (Revoke token).
+
+## Vercel’ga joylash (serverless)
+
+Vercel’da funksiya uzoq vaqt ishlamaydi va disk faqat o‘qish uchun. Shuning uchun:
+
+- Telegram **polling** o‘rniga **webhook** ishlatiladi (`POST /api/telegram`);
+- `storage/data.json` ga yozib bo‘lmaydi (Vercel’da), doimiy saqlash uchun **Upstash Redis** qo‘shiladi.
+  Redis sozlanmasa ham buyurtma Telegram’ga yetib boradi, lekin tarix saqlanmaydi va `/cancel` ishlamaydi;
+- statik sayt (`public/`) Vercel CDN’dan beriladi, API esa `api/[...path].js` funksiyasida ishlaydi.
+
+Qadamlar:
+
+1. Kodni GitHub’ga yuboring (`commit` + `push`).
+2. https://vercel.com/new → shu repozitoriyani tanlang (Root Directory: `.`).
+3. Project → Settings → Environment Variables ichiga qo‘shing:
+
+   | Nomi | Qiymati |
+   |---|---|
+   | `BOT_TOKEN` | BotFather bergan token |
+   | `ADMIN_CHAT_ID` | admin chat ID |
+   | `TELEGRAM_WEBHOOK_SECRET` | `.env` dagi bilan **bir xil** tasodifiy satr |
+
+   Ixtiyoriy (doimiy saqlash uchun): `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+   (Vercel → Storage → Upstash Redis; qiymatlar avtomatik beriladi).
+
+4. Deploy qilib domenni oling (masalan `https://ayvon.vercel.app`).
+5. Webhook’ni lokal kompyuterdan o‘rnating:
+
+   ```
+   node scripts/set-webhook.js https://<domen>
+   node scripts/set-webhook.js --info     (tekshirish)
+   node scripts/set-webhook.js --delete   (o‘chirish)
+   ```
+
+> **Muhim:** webhook o‘rnatilgandan keyin Telegram polling ishlamaydi (409 Conflict).
+> Shu sababli lokal `node server.js` ni to‘xtating yoki `USE_WEBHOOK=1` bilan ishga tushiring.
+
+Deploy’dan keyin tekshiriladigan narsalar:
+
+- `https://<domen>/` → 200; `/.env`, `/data.json`, `/server.js`, `/storage/data.json` → 404;
+- javob header’ida CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` bor;
+- saytdagi formadan buyurtma yuborilsa admin chatiga xabar keladi.
 
 ## Telegram botni sozlash
 - Telegramda @BotFather orqali `/newbot` buyrug‘i bilan bot yarating.
@@ -47,6 +95,9 @@ storage/       -> buyurtmalar va band qilishlar (data.json). Git'ga tushmaydi, o
 | `TRUST_PROXY=1` | nginx/reverse-proxy orqasida ishlasa (to‘g‘ri IP uchun) |
 | `ENABLE_HSTS=1` | HTTPS orqasida HSTS header qo‘shadi |
 | `ALLOWED_ORIGINS` | API uchun ruxsat etilgan domenlar, vergul bilan |
+| `USE_WEBHOOK=1` | Polling o‘chadi: update’lar `POST /api/telegram` ga keladi |
+| `TELEGRAM_WEBHOOK_SECRET` | Telegram webhook so‘rovini tasdiqlovchi maxfiy satr (Vercel’da majburiy) |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash Redis (doimiy saqlash; Vercel’da kerak) |
 
 ## Keyingi qadamlar (tavsiya)
 - Ma’lumotlarni bazaga (SQLite/Postgres) ko‘chirish, eski yozuvlar uchun arxiv/retention siyosati.
